@@ -14,4 +14,7 @@ pub struct Cli {
 pub enum Commands {
     /// Initialize resources for `ogit`
     Init,
+    /// Compute object ID and optionally creates a blob from a file.
+    #[command(name = "hash-object")]
+    HashObject { file: String },
 }
