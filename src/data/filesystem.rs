@@ -1,12 +1,11 @@
 use itertools::Itertools;
-use sha1::{Digest, Sha1};
 use std::{
     env::current_dir,
     fs::{create_dir, write},
     path::PathBuf,
 };
 
-use super::objects::OgitObject;
+use super::objects::{OgitObject, OgitObjectType};
 
 const OGIT_DIR: &str = ".ogit";
 
@@ -25,12 +24,11 @@ pub fn ogit_init() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn hash_object(data: &str) -> Result<OgitObject, std::io::Error> {
-    let mut hasher = Sha1::new();
-    hasher.update(data.as_bytes());
-    let result = hasher.finalize();
-
-    let object = OgitObject::new(format!("{result:x}"));
+pub fn hash_object(
+    data: &str,
+    object_type: Option<OgitObjectType>,
+) -> Result<OgitObject, std::io::Error> {
+    let object = OgitObject::new(data, object_type.unwrap_or(OgitObjectType::Blob));
     // write object to database
     let mut object_path = match current_dir() {
         Ok(p) => p,
@@ -69,20 +67,4 @@ pub fn hash_object(data: &str) -> Result<OgitObject, std::io::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hex_literal::hex;
-    #[test]
-    fn test_hashing() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"hello world");
-        let result = hasher.finalize();
-        assert_eq!(result[..], hex!("2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"));
-    }
-    #[test]
-    fn test_display() {
-        let mut hasher = Sha1::new();
-        hasher.update(b"hello world");
-        let result = hasher.finalize();
-        let display = format!("{:x}", result);
-        assert_eq!(display, "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
-    }
 }

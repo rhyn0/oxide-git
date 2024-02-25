@@ -19,7 +19,7 @@ pub fn hash_object_cmd(file_path: String) {
             return;
         }
     };
-    let object = hash_object(&file);
+    let object = hash_object(&file, None);
     match object {
         Ok(obj) => println!("{obj}"),
         Err(e) => eprintln!("Error: {e}"),
