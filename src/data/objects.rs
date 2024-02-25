@@ -1,10 +1,12 @@
 use sha1::{Digest, Sha1};
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 /// Git creates objects of various types and allows references to them as args in exchangeable ways
 #[derive(Debug, Clone)]
 pub struct OgitObject {
-    data: Vec<u8>,
+    id: Vec<u8>,
+    header: String,
+    pub data: String,
     #[allow(dead_code)]
     variant: OgitObjectType,
 }
@@ -16,6 +18,19 @@ pub enum OgitObjectType {
     Tree,
     #[allow(dead_code)]
     Commit,
+}
+
+impl FromStr for OgitObjectType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "blob" => Ok(Self::Blob),
+            "tree" => Ok(Self::Tree),
+            "commit" => Ok(Self::Commit),
+            _ => Err("Invalid object type".to_string()),
+        }
+    }
 }
 
 impl ToString for OgitObjectType {
@@ -39,20 +54,45 @@ impl OgitObject {
     pub fn new(data: &str, variant: OgitObjectType) -> Self {
         let mut hasher = Sha1::new();
         // add Git object header. More info: https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
-        hasher.update(format!("{} {}\0", variant.to_string(), data.len()).as_bytes());
-        // add data body
-        hasher.update(data.as_bytes());
+        let header = format!("{} {}\0", variant.to_string(), data.len());
+        let final_content = format!("{header}{data}");
+        hasher.update(final_content.as_bytes());
         let hash_result = hasher.finalize().to_vec();
         Self {
-            data: hash_result,
+            id: hash_result,
+            header,
+            data: data.to_string(),
+            variant,
+        }
+    }
+    /// Initialize object from object database
+    pub fn from_database(content: &str) -> Self {
+        let mut hasher = Sha1::new();
+        hasher.update(content.as_bytes());
+        let hash_result = hasher.finalize().to_vec();
+
+        // have to read out the object type from content header
+        let (header, data) = content.split_once('\0').unwrap();
+        let (variant, _) = header.split_once(' ').unwrap();
+        let mut header = header.to_string();
+        header.push('\0');
+        let variant = variant.parse().unwrap();
+
+        Self {
+            id: hash_result,
+            data: data.to_string(),
+            header,
             variant,
         }
     }
     pub fn hex_string(&self) -> String {
-        self.data.iter().fold(String::new(), |mut acc, b| {
+        self.id.iter().fold(String::new(), |mut acc, b| {
             acc.push_str(&format!("{b:02x}"));
             acc
         })
+    }
+    pub fn file_content(&self) -> String {
+        format!("{}{}", self.header, self.data)
     }
     /// Outputs relative path to object in database
     ///

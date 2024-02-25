@@ -1,4 +1,7 @@
+use flate2::Compression;
+use flate2::{read::ZlibDecoder, write::ZlibEncoder};
 use itertools::Itertools;
+use std::io::prelude::*;
 use std::{
     env::current_dir,
     fs::{create_dir, write},
@@ -60,10 +63,45 @@ pub fn hash_object(
     object_path.push(file);
 
     // write and catch the possible IO error
-    write(object_path, data)?;
+    // compress the data before writing to the file
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(object.file_content().as_bytes())?;
+    let compressed_bytes = encoder.finish().unwrap();
+    // write the compressed data to the file
+    write(object_path, compressed_bytes)?;
     Ok(object)
 }
 
+pub fn get_object(object_id: &str) -> Result<OgitObject, std::io::Error> {
+    let mut object_path = match current_dir() {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("Error getting current directory: {e}");
+            return Err(e);
+        }
+    };
+    object_path.push(PathBuf::from(OGIT_DIR.to_string()));
+    object_path.push(PathBuf::from("objects"));
+
+    let (dir, file) = object_id.split_at(2);
+    object_path.push(PathBuf::from(dir));
+    object_path.push(PathBuf::from(file));
+
+    let object_data = match std::fs::read(object_path) {
+        Ok(data) => {
+            let mut output = String::new();
+            let mut decoder = ZlibDecoder::new(data.as_slice());
+            decoder.read_to_string(&mut output).unwrap();
+            output
+        }
+        Err(e) => {
+            eprintln!("Error reading object file: {e}");
+            return Err(e);
+        }
+    };
+
+    Ok(OgitObject::from_database(&object_data))
+}
 #[cfg(test)]
 mod tests {
     use super::*;

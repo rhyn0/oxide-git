@@ -17,4 +17,7 @@ pub enum Commands {
     /// Compute object ID and optionally creates a blob from a file.
     #[command(name = "hash-object")]
     HashObject { file: String },
+    /// Read the content of the object with the given ID
+    #[command(name = "cat-object")]
+    CatObject { object_id: String },
 }

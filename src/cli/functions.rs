@@ -2,7 +2,7 @@ use std::fs;
 
 use crate::data::prelude::*;
 
-use self::filesystem::{hash_object, ogit_init};
+use self::filesystem::{get_object, hash_object, ogit_init};
 
 pub fn init_cmd() {
     let dir_created = ogit_init();
@@ -22,6 +22,14 @@ pub fn hash_object_cmd(file_path: String) {
     let object = hash_object(&file, None);
     match object {
         Ok(obj) => println!("{obj}"),
+        Err(e) => eprintln!("Error: {e}"),
+    }
+}
+
+pub fn cat_object_cmd(object_id: &str) {
+    let object = get_object(object_id);
+    match object {
+        Ok(obj) => println!("{}", obj.data),
         Err(e) => eprintln!("Error: {e}"),
     }
 }
