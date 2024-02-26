@@ -119,4 +119,24 @@ pub fn get_object(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_create_object() {
+        let _ = ogit_init();
+        let object = hash_object("hello world", None).unwrap();
+        assert_eq!(object.variant, OgitObjectType::Blob);
+        assert_eq!(object.data, "hello world");
+        assert_eq!(object.file_content(), "blob 11\0hello world");
+        let hex_string = object.hex_string();
+        let path = object.object_database_filepath();
+        assert_eq!(path, format!("{}/{}", &hex_string[..2], &hex_string[2..]));
+        let mut object_path = PathBuf::from(OGIT_DIR.to_string());
+        object_path.push(PathBuf::from("objects"));
+        let (dir, file) = path.split('/').collect_tuple().unwrap();
+        object_path.push(PathBuf::from(dir));
+        object_path.push(PathBuf::from(file));
+        assert!(object_path.exists());
+
+        std::fs::remove_file(object_path).unwrap();
+    }
 }
