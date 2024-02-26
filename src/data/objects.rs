@@ -1,17 +1,7 @@
 use sha1::{Digest, Sha1};
 use std::{fmt::Display, str::FromStr};
 
-/// Git creates objects of various types and allows references to them as args in exchangeable ways
-#[derive(Debug, Clone)]
-pub struct OgitObject {
-    id: Vec<u8>,
-    header: String,
-    pub data: String,
-    #[allow(dead_code)]
-    variant: OgitObjectType,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OgitObjectType {
     Blob,
     #[allow(dead_code)]
@@ -33,14 +23,27 @@ impl FromStr for OgitObjectType {
     }
 }
 
-impl ToString for OgitObjectType {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Blob => "blob".to_string(),
-            Self::Tree => "tree".to_string(),
-            Self::Commit => "commit".to_string(),
-        }
+impl Display for OgitObjectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Blob => "blob",
+                Self::Tree => "tree",
+                Self::Commit => "commit",
+            }
+        )
     }
+}
+
+/// Git creates objects of various types and allows references to them as args in exchangeable ways
+#[derive(Debug, Clone)]
+pub struct OgitObject {
+    id: Vec<u8>,
+    header: String,
+    pub data: String,
+    pub variant: OgitObjectType,
 }
 
 impl Display for OgitObject {
@@ -54,7 +57,7 @@ impl OgitObject {
     pub fn new(data: &str, variant: OgitObjectType) -> Self {
         let mut hasher = Sha1::new();
         // add Git object header. More info: https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
-        let header = format!("{} {}\0", variant.to_string(), data.len());
+        let header = format!("{} {}\0", variant, data.len());
         let final_content = format!("{header}{data}");
         hasher.update(final_content.as_bytes());
         let hash_result = hasher.finalize().to_vec();
@@ -132,11 +135,22 @@ mod tests {
         assert_eq!(result[..], hex!("2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"));
     }
     #[test]
-    fn test_display() {
+    fn test_hash_display() {
         let mut hasher = Sha1::new();
         hasher.update(b"hello world");
         let result = hasher.finalize();
         let display = format!("{:x}", result);
         assert_eq!(display, "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
+    }
+    #[test]
+    fn test_display() {
+        let variants_with_expected = vec![
+            (OgitObjectType::Blob, "blob"),
+            (OgitObjectType::Tree, "tree"),
+            (OgitObjectType::Commit, "commit"),
+        ];
+        for (variant, expected) in variants_with_expected {
+            assert_eq!(format!("{variant}"), expected);
+        }
     }
 }

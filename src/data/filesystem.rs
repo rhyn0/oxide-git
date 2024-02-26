@@ -72,7 +72,10 @@ pub fn hash_object(
     Ok(object)
 }
 
-pub fn get_object(object_id: &str) -> Result<OgitObject, std::io::Error> {
+pub fn get_object(
+    object_id: &str,
+    expected_object_type: Option<OgitObjectType>,
+) -> Result<OgitObject, std::io::Error> {
     let mut object_path = match current_dir() {
         Ok(p) => p,
         Err(e) => {
@@ -99,8 +102,19 @@ pub fn get_object(object_id: &str) -> Result<OgitObject, std::io::Error> {
             return Err(e);
         }
     };
-
-    Ok(OgitObject::from_database(&object_data))
+    let object = OgitObject::from_database(&object_data);
+    if let Some(ogit_type) = expected_object_type {
+        if object.variant != ogit_type {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "Object type mismatch, expected: {ogit_type}, got: {}",
+                    object.variant
+                ),
+            ));
+        }
+    }
+    Ok(object)
 }
 #[cfg(test)]
 mod tests {

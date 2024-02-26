@@ -27,7 +27,7 @@ pub fn hash_object_cmd(file_path: String) {
 }
 
 pub fn cat_object_cmd(object_id: &str) {
-    let object = get_object(object_id);
+    let object = get_object(object_id, None);
     match object {
         Ok(obj) => println!("{}", obj.data),
         Err(e) => eprintln!("Error: {e}"),
