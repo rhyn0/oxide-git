@@ -105,6 +105,7 @@ pub fn get_object(
     let object = OgitObject::from_database(&object_data);
     if let Some(ogit_type) = expected_object_type {
         if object.variant != ogit_type {
+            // TODO: custom error type?
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!(
