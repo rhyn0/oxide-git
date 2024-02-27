@@ -2,7 +2,10 @@ use std::fs;
 
 use crate::data::prelude::*;
 
-use self::filesystem::{get_object, hash_object, ogit_init};
+use self::{
+    base::write_tree,
+    filesystem::{get_object, hash_object, ogit_init},
+};
 
 pub fn init_cmd() {
     let dir_created = ogit_init();
@@ -30,6 +33,15 @@ pub fn cat_object_cmd(object_id: &str) {
     let object = get_object(object_id, None);
     match object {
         Ok(obj) => println!("{}", obj.data),
+        Err(e) => eprintln!("Error: {e}"),
+    }
+}
+
+pub fn write_tree_cmd(directory: Option<&str>) {
+    let directory = directory.map(|s| fs::canonicalize(s).unwrap());
+    let tree = write_tree(directory);
+    match tree {
+        Ok(t) => println!("{t}"),
         Err(e) => eprintln!("Error: {e}"),
     }
 }
