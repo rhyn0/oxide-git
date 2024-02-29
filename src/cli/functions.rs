@@ -32,7 +32,8 @@ pub fn hash_object_cmd(file_path: String) {
 pub fn cat_object_cmd(object_id: &str) {
     let object = get_object(object_id, None);
     match object {
-        Ok(obj) => println!("{}", obj.data),
+        // TODO: Git will just output the characters no matter the type, but Rust can't handle outside the UTF8 range as String
+        Ok(obj) => println!("{}", std::str::from_utf8(&obj.data).unwrap()),
         Err(e) => eprintln!("Error: {e}"),
     }
 }
@@ -40,6 +41,7 @@ pub fn cat_object_cmd(object_id: &str) {
 pub fn write_tree_cmd(directory: Option<&str>) {
     let directory = directory.map(|s| fs::canonicalize(s).unwrap());
     let tree = write_tree(directory);
+    eprintln!("Done with tree - {tree:?}");
     match tree {
         Ok(t) => println!("{t}"),
         Err(e) => eprintln!("Error: {e}"),

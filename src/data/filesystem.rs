@@ -31,7 +31,7 @@ pub fn hash_object(
     data: &str,
     object_type: Option<OgitObjectType>,
 ) -> Result<OgitObject, std::io::Error> {
-    let object = OgitObject::new(data, object_type.unwrap_or(OgitObjectType::Blob));
+    let object = OgitObject::new(data.as_bytes(), object_type.unwrap_or(OgitObjectType::Blob));
     // write object to database
     let mut object_path = match current_dir() {
         Ok(p) => p,
@@ -92,9 +92,9 @@ pub fn get_object(
 
     let object_data = match std::fs::read(object_path) {
         Ok(data) => {
-            let mut output = String::new();
+            let mut output = Vec::new();
             let mut decoder = ZlibDecoder::new(data.as_slice());
-            decoder.read_to_string(&mut output).unwrap();
+            let _ = decoder.read(&mut output).unwrap();
             output
         }
         Err(e) => {
@@ -125,7 +125,7 @@ mod tests {
         let _ = ogit_init();
         let object = hash_object("hello world", None).unwrap();
         assert_eq!(object.variant, OgitObjectType::Blob);
-        assert_eq!(object.data, "hello world");
+        assert_eq!(object.data, "hello world".as_bytes());
         assert_eq!(object.file_content(), "blob 11\0hello world");
         let hex_string = object.hex_string();
         let path = object.object_database_filepath();

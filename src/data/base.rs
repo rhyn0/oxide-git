@@ -4,7 +4,10 @@ use std::{
 };
 
 /// Higher order operations on data.
-use crate::data::objects::{OgitObject, OgitObjectType};
+use crate::data::{
+    filesystem::hash_object,
+    objects::{OgitObject, OgitObjectType},
+};
 
 /// Recursively writes a directory to the ogit database.
 ///
@@ -24,10 +27,12 @@ pub fn write_tree(directory: Option<PathBuf>) -> Result<OgitObject, std::io::Err
             let sub_tree = write_tree(Some(path))?;
             println!("sub_tree: {sub_tree:?}");
         } else {
-            println!("path: {path:?}");
+            let data = fs::read_to_string(&path).unwrap();
+            let object = hash_object(&data, Some(OgitObjectType::Blob)).unwrap();
+            println!("object: {object} - {path:?}");
         }
     }
-    Ok(OgitObject::new("tree", OgitObjectType::Tree))
+    Ok(OgitObject::new(b"tree", OgitObjectType::Tree))
 }
 
 /// Returns whether a file is ignored or not.

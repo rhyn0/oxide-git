@@ -1,5 +1,6 @@
+use itertools::Itertools;
 use sha1::{Digest, Sha1};
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, io::Read, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OgitObjectType {
@@ -42,7 +43,7 @@ impl Display for OgitObjectType {
 pub struct OgitObject {
     id: Vec<u8>,
     header: String,
-    pub data: String,
+    pub data: Vec<u8>,
     pub variant: OgitObjectType,
 }
 
@@ -54,36 +55,38 @@ impl Display for OgitObject {
 }
 
 impl OgitObject {
-    pub fn new(data: &str, variant: OgitObjectType) -> Self {
+    pub fn new(data: &[u8], variant: OgitObjectType) -> Self {
         let mut hasher = Sha1::new();
         // add Git object header. More info: https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
         let header = format!("{} {}\0", variant, data.len());
-        let final_content = format!("{header}{data}");
-        hasher.update(final_content.as_bytes());
+        hasher.update(header.as_bytes());
+        hasher.update(data);
         let hash_result = hasher.finalize().to_vec();
         Self {
             id: hash_result,
             header,
-            data: data.to_string(),
+            data: data.to_owned(),
             variant,
         }
     }
     /// Initialize object from object database
-    pub fn from_database(content: &str) -> Self {
+    pub fn from_database(content: &[u8]) -> Self {
         let mut hasher = Sha1::new();
-        hasher.update(content.as_bytes());
+        hasher.update(content);
         let hash_result = hasher.finalize().to_vec();
 
         // have to read out the object type from content header
-        let (header, data) = content.split_once('\0').unwrap();
-        let (variant, _) = header.split_once(' ').unwrap();
-        let mut header = header.to_string();
+        let (mut header, data) = content.splitn(2, |c| *c == b'\0').collect_tuple().unwrap();
+        let mut header_content = String::new();
+        header.read_to_string(&mut header_content).unwrap();
+        let (variant, _) = header_content.split_once(' ').unwrap();
+        let mut header = header_content.to_string();
         header.push('\0');
         let variant = variant.parse().unwrap();
 
         Self {
             id: hash_result,
-            data: data.to_string(),
+            data: data.to_owned(),
             header,
             variant,
         }
@@ -95,7 +98,9 @@ impl OgitObject {
         })
     }
     pub fn file_content(&self) -> String {
-        format!("{}{}", self.header, self.data)
+        std::str::from_utf8([self.header.as_bytes(), &self.data].concat().as_slice())
+            .unwrap()
+            .to_string()
     }
     /// Outputs relative path to object in database
     ///
@@ -113,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_object_filepath() {
-        let object = OgitObject::new("hello world", OgitObjectType::Blob);
+        let object = OgitObject::new("hello world".as_bytes(), OgitObjectType::Blob);
         assert_eq!(
             object.object_database_filepath(),
             "95/d09f2b10159347eece71399a7e2e907ea3df4f"
@@ -121,7 +126,7 @@ mod tests {
     }
     #[test]
     fn test_hash() {
-        let object = OgitObject::new("hello world", OgitObjectType::Blob);
+        let object = OgitObject::new("hello world".as_bytes(), OgitObjectType::Blob);
         assert_eq!(
             object.hex_string(),
             "95d09f2b10159347eece71399a7e2e907ea3df4f".to_string(),
