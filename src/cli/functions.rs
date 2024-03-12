@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io::Write};
 
 use crate::data::prelude::*;
 
@@ -32,8 +32,11 @@ pub fn hash_object_cmd(file_path: String) {
 pub fn cat_object_cmd(object_id: &str) {
     let object = get_object(object_id, None);
     match object {
-        // TODO: Git will just output the characters no matter the type, but Rust can't handle outside the UTF8 range as String
-        Ok(obj) => println!("{}", std::str::from_utf8(&obj.data).unwrap()),
+        Ok(obj) => {
+            let stdout = std::io::stdout();
+            let mut handle = stdout.lock();
+            handle.write_all(&obj.data).unwrap();
+        }
         Err(e) => eprintln!("Error: {e}"),
     }
 }

@@ -90,11 +90,12 @@ pub fn get_object(
     object_path.push(PathBuf::from(dir));
     object_path.push(PathBuf::from(file));
 
+    // TODO: move this into `OgitObject::from_database`
     let object_data = match std::fs::read(object_path) {
         Ok(data) => {
             let mut output = Vec::new();
-            let mut decoder = ZlibDecoder::new(data.as_slice());
-            let _ = decoder.read(&mut output).unwrap();
+            let mut decoder = ZlibDecoder::new(&data[..]);
+            decoder.read_to_end(&mut output)?;
             output
         }
         Err(e) => {
