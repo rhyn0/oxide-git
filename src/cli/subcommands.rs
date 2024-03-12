@@ -18,7 +18,7 @@ pub enum Commands {
     #[command(name = "hash-object")]
     HashObject { file: String },
     /// Read the content of the object with the given ID
-    #[command(name = "cat-object")]
+    #[command(name = "cat-file")]
     CatObject { object_id: String },
     #[command(name = "write-tree")]
     WriteTree { directory: Option<String> },
