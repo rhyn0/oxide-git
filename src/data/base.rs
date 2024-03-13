@@ -1,8 +1,10 @@
 use itertools::Itertools;
 use regex::Regex;
 use std::{
-    fmt::{Display, Write},
-    fs, iter,
+    fmt::{Display, Write as _},
+    fs,
+    io::Write,
+    iter,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -71,19 +73,12 @@ impl TreeEntry {
     }
 }
 
-/// Recursively writes a directory to the ogit database.
-///
-/// An Ogit Tree is a collection of Ogit Blobs and Ogit Trees.
-/// So find the sub items and create them as Ogit Blobs or Ogit Trees
-/// and pass up the sub roots to the parent tree.
 #[allow(clippy::trivial_regex)]
-pub fn write_tree(directory: Option<PathBuf>) -> Result<OgitObject, std::io::Error> {
-    // let mut tree = OgitObject::new(OgitObjectType::Tree);
-    let mut tree_entries = Vec::new();
+fn load_ignore_regex() -> Vec<Regex> {
     let ignore_lines = filesystem::load_ignore_file();
     // TODO: fix bug where `target/` won't match `target` as a path
     // Follow gitignore spec better: https://git-scm.com/docs/gitignore
-    let ignore_regexes = ignore_lines
+    ignore_lines
         .iter()
         .map(|line| {
             let line = line.replace('.', r"\.").replace('*', ".*");
@@ -91,7 +86,17 @@ pub fn write_tree(directory: Option<PathBuf>) -> Result<OgitObject, std::io::Err
         })
         // TODO: change this regex to be more specific
         .chain(iter::once(Regex::new(r"\.ogit").unwrap()))
-        .collect_vec();
+        .collect_vec()
+}
+/// Recursively writes a directory to the ogit database.
+///
+/// An Ogit Tree is a collection of Ogit Blobs and Ogit Trees.
+/// So find the sub items and create them as Ogit Blobs or Ogit Trees
+/// and pass up the sub roots to the parent tree.
+pub fn write_tree(directory: Option<PathBuf>) -> Result<OgitObject, std::io::Error> {
+    // let mut tree = OgitObject::new(OgitObjectType::Tree);
+    let mut tree_entries = Vec::new();
+    let ignore_regexes = load_ignore_regex();
     for entry in fs::read_dir(directory.unwrap_or_else(|| PathBuf::from(".")))? {
         // take it straight fromo the examples
         let entry = entry?;
@@ -166,10 +171,42 @@ fn get_tree(tree_id: &str, path: Option<PathBuf>) -> Result<Vec<TreeEntry>, std:
     Ok(result)
 }
 
+fn empty_current_directory() -> Result<(), std::io::Error> {
+    let ignore_regex = load_ignore_regex();
+    for entry in fs::read_dir(".")? {
+        let entry = entry?;
+        let path = entry.path();
+        if is_ignored(&path, &ignore_regex) {
+            continue;
+        }
+        if path.is_dir() {
+            // after removal we don't care if it fails or not
+            // directory could have untracked files that mean its not empty
+            let _ = fs::remove_dir(path);
+        } else {
+            fs::remove_file(path)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn read_tree(tree_id: &str) -> Result<(), std::io::Error> {
+    empty_current_directory()?;
     let entries = get_tree(tree_id, None)?;
     for entry in entries {
-        println!("{entry}");
+        let path = entry.filename;
+        match fs::create_dir(path.parent().unwrap()) {
+            Ok(()) => (),
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::AlreadyExists {
+                    eprintln!("Error creating directory: {e}");
+                    return Err(e);
+                }
+            }
+        };
+        let object = filesystem::get_object(&entry.id, Some(entry.variant))?;
+        let mut file = fs::File::create(path)?;
+        file.write_all(&object.data)?;
     }
     Ok(())
 }
