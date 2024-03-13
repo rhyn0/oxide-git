@@ -82,7 +82,7 @@ pub fn write_tree(directory: Option<PathBuf>) -> Result<OgitObject, std::io::Err
             tree_entries.push(TreeEntry::new(&path, sub_tree));
         } else {
             let data = fs::read(&path).unwrap();
-            let object = hash_object(&data, Some(OgitObjectType::Blob)).unwrap();
+            let object = hash_object(&data, Some(OgitObjectType::Blob))?;
             tree_entries.push(TreeEntry::new(&path, object));
         }
     }
