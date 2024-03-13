@@ -22,4 +22,6 @@ pub enum Commands {
     CatObject { object_id: String },
     #[command(name = "write-tree")]
     WriteTree { directory: Option<String> },
+    #[command(name = "read-tree", about = "Read a tree object into the index")]
+    ReadTree { tree_id: String },
 }

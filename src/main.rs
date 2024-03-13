@@ -16,5 +16,6 @@ fn main() {
         Commands::HashObject { file } => functions::hash_object_cmd(&file),
         Commands::CatObject { object_id } => functions::cat_object_cmd(&object_id),
         Commands::WriteTree { directory } => functions::write_tree_cmd(directory.as_deref()),
+        Commands::ReadTree { tree_id } => functions::read_tree_cmd(&tree_id),
     };
 }

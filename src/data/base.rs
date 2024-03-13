@@ -4,6 +4,7 @@ use std::{
     fmt::{Display, Write},
     fs, iter,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 /// Higher order operations on data.
@@ -15,7 +16,7 @@ use crate::data::{
 #[derive(Debug, Clone)]
 struct TreeEntry {
     filemode: String,
-    filename: String,
+    filename: PathBuf,
     id: String,
     variant: OgitObjectType,
 }
@@ -24,8 +25,29 @@ impl Display for TreeEntry {
         write!(
             f,
             "{} {} {} {}",
-            self.filemode, self.variant, self.id, self.filename
+            self.filemode,
+            self.variant,
+            self.id,
+            self.filename.file_name().unwrap().to_str().unwrap()
         )
+    }
+}
+impl FromStr for TreeEntry {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split_whitespace();
+        let filemode = parts.next().unwrap();
+        let variant = parts.next().unwrap();
+        let id = parts.next().unwrap();
+        // should only be a singular item here
+        let filename = parts.next().unwrap();
+        Ok(Self {
+            filemode: filemode.to_string(),
+            filename: PathBuf::from(filename),
+            id: id.to_string(),
+            variant: OgitObjectType::from_str(variant).unwrap(),
+        })
     }
 }
 impl TreeEntry {
@@ -35,7 +57,7 @@ impl TreeEntry {
                 filesystem::get_filemode(file_path).unwrap(),
                 &object.variant,
             ),
-            filename: filesystem::get_filename(file_path).unwrap().to_string(),
+            filename: PathBuf::from(filesystem::get_filename(file_path).unwrap()),
             id: object.hex_string(),
             variant: object.variant,
         }
@@ -105,6 +127,53 @@ pub fn is_ignored(path: &Path, ignores: &[Regex]) -> bool {
     result
 }
 
+/// Returns iterator of the `TreeEntry` in the tree object specified by `tree_id`.
+fn parse_tree_data(tree_id: Option<&str>) -> Vec<TreeEntry> {
+    let tree = if let Some(id) = tree_id {
+        filesystem::get_object(id, Some(OgitObjectType::Tree)).unwrap()
+    } else {
+        return Vec::new();
+    };
+    // OgitObject stores file content as bytes, but since this is tree we know its valid UTF8
+    let tree_data = String::from_utf8(tree.data).unwrap();
+    tree_data
+        .lines()
+        .map(|line| line.parse::<TreeEntry>().unwrap())
+        .collect_vec()
+}
+
+/// Returns path to object and the OID of its contents
+fn get_tree(tree_id: &str, path: Option<PathBuf>) -> Result<Vec<TreeEntry>, std::io::Error> {
+    let base_path = path.unwrap_or_else(|| PathBuf::from("."));
+    let mut result = Vec::new();
+    let mut entries = parse_tree_data(Some(tree_id));
+    for entry in &mut entries {
+        let mut path = base_path.clone();
+        match entry.variant {
+            OgitObjectType::Blob => {
+                path.push(&entry.filename);
+                entry.filename = path;
+                result.push(entry.clone());
+            }
+            OgitObjectType::Tree => {
+                path.push(&entry.filename);
+                let sub_tree = get_tree(&entry.id, Some(path))?;
+                result.extend(sub_tree);
+            }
+            OgitObjectType::Commit => panic!("Invalid object type in tree"),
+        }
+    }
+    Ok(result)
+}
+
+pub fn read_tree(tree_id: &str) -> Result<(), std::io::Error> {
+    let entries = get_tree(tree_id, None)?;
+    for entry in entries {
+        println!("{entry}");
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,7 +185,7 @@ mod tests {
         let entry = TreeEntry::new(Path::new("src/data/objects.rs"), test_object.clone());
         assert_eq!(entry.filemode.len(), 6);
         assert_eq!(entry.filemode, "100644");
-        assert_eq!(entry.filename, "objects.rs");
+        assert_eq!(entry.filename, PathBuf::from("objects.rs"));
         assert_eq!(entry.id, test_object.hex_string());
     }
     #[test]
@@ -126,7 +195,7 @@ mod tests {
         let entry = TreeEntry::new(Path::new("src/data"), test_object.clone());
         assert_eq!(entry.filemode.len(), 6);
         assert_eq!(entry.filemode, "040000");
-        assert_eq!(entry.filename, "data");
+        assert_eq!(entry.filename, PathBuf::from("data"));
         assert_eq!(entry.id, test_object.hex_string());
     }
 }

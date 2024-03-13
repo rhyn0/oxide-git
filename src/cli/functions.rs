@@ -49,3 +49,11 @@ pub fn write_tree_cmd(directory: Option<&str>) {
         Err(e) => eprintln!("Error: {e}"),
     }
 }
+
+pub fn read_tree_cmd(tree_id: &str) {
+    let tree = base::read_tree(tree_id);
+    match tree {
+        Ok(()) => (),
+        Err(e) => eprintln!("Error reading tree: {e}"),
+    }
+}
