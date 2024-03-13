@@ -1,4 +1,4 @@
-use std::{fs, io::Write};
+use std::{fs, io::Write, path::Path};
 
 use crate::data::prelude::*;
 
@@ -14,15 +14,15 @@ pub fn init_cmd() {
     };
 }
 
-pub fn hash_object_cmd(file_path: String) {
-    let file = match fs::read_to_string(file_path) {
+pub fn hash_object_cmd(file_path: &str) {
+    let file_content = match filesystem::read_file(Path::new(file_path)) {
         Ok(f) => f,
         Err(e) => {
             eprintln!("Error reading content file: {e}");
             return;
         }
     };
-    let object = hash_object(&file, None);
+    let object = hash_object(&file_content, None);
     match object {
         Ok(obj) => println!("{obj}"),
         Err(e) => eprintln!("Error: {e}"),
@@ -44,7 +44,6 @@ pub fn cat_object_cmd(object_id: &str) {
 pub fn write_tree_cmd(directory: Option<&str>) {
     let directory = directory.map(|s| fs::canonicalize(s).unwrap());
     let tree = write_tree(directory);
-    eprintln!("Done with tree - {tree:?}");
     match tree {
         Ok(t) => println!("{t}"),
         Err(e) => eprintln!("Error: {e}"),

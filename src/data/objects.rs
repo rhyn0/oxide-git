@@ -5,7 +5,6 @@ use std::{fmt::Display, io::Read, str::FromStr};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OgitObjectType {
     Blob,
-    #[allow(dead_code)]
     Tree,
     #[allow(dead_code)]
     Commit,
@@ -70,7 +69,7 @@ impl OgitObject {
         }
     }
     /// Initialize object from object database
-    pub fn from_database(content: &[u8]) -> Self {
+    pub fn from_bytes(content: &[u8]) -> Self {
         let mut hasher = Sha1::new();
         hasher.update(content);
         let hash_result = hasher.finalize().to_vec();
@@ -91,16 +90,15 @@ impl OgitObject {
             variant,
         }
     }
+
     pub fn hex_string(&self) -> String {
         self.id.iter().fold(String::new(), |mut acc, b| {
             acc.push_str(&format!("{b:02x}"));
             acc
         })
     }
-    pub fn file_content(&self) -> String {
-        std::str::from_utf8([self.header.as_bytes(), &self.data].concat().as_slice())
-            .unwrap()
-            .to_string()
+    pub fn file_content(&self) -> Vec<u8> {
+        [self.header.as_bytes(), &self.data].concat()
     }
     /// Outputs relative path to object in database
     ///

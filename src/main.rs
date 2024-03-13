@@ -13,7 +13,7 @@ fn main() {
     };
     match cli.command {
         Commands::Init => functions::init_cmd(),
-        Commands::HashObject { file } => functions::hash_object_cmd(file),
+        Commands::HashObject { file } => functions::hash_object_cmd(&file),
         Commands::CatObject { object_id } => functions::cat_object_cmd(&object_id),
         Commands::WriteTree { directory } => functions::write_tree_cmd(directory.as_deref()),
     };
