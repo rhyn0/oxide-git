@@ -6,7 +6,6 @@ use std::{fmt::Display, io::Read, str::FromStr};
 pub enum OgitObjectType {
     Blob,
     Tree,
-    #[allow(dead_code)]
     Commit,
 }
 

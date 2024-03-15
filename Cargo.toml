@@ -10,6 +10,7 @@ name = "og"
 path = "src/main.rs"
 
 [dependencies]
+chrono = "0.4.35"
 clap = { version = "4.4.10", features = ["derive"] }
 digest = "0.10.7"
 flate2 = "1.0.28"

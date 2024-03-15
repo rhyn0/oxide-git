@@ -57,3 +57,14 @@ pub fn read_tree_cmd(tree_id: &str) {
         Err(e) => eprintln!("Error reading tree: {e}"),
     }
 }
+
+pub fn commit_tree_cmd(tree_id: &str, parents: Option<&[String]>) {
+    if let Some(parents) = parents {
+        eprintln!("Given parents {parents:?} but we don't know how to use it yet.");
+    }
+    let commit = base::commit_tree(tree_id, parents.unwrap_or_default());
+    match commit {
+        Ok(c) => println!("{c}"),
+        Err(e) => eprintln!("Error: {e}"),
+    }
+}

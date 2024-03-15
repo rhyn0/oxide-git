@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
 pub struct Cli {
     /// Turn debugging and verbose information on to different levels
     #[arg(short, long, action = clap::ArgAction::Count)]
@@ -24,4 +25,14 @@ pub enum Commands {
     WriteTree { directory: Option<String> },
     #[command(name = "read-tree", about = "Read a tree object into the index")]
     ReadTree { tree_id: String },
+    #[command(
+        name = "commit-tree",
+        about = "Create a new commit object based on provided tree"
+    )]
+    CommitTree {
+        tree_id: String,
+        // there can be multiple parents, so this is Vec
+        #[arg(short, help = "The parent commit object")]
+        parent: Option<Vec<String>>,
+    },
 }

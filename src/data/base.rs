@@ -11,8 +11,10 @@ use std::{
 
 /// Higher order operations on data.
 use crate::data::{
+    config,
     filesystem::{self, hash_object},
     objects::{OgitObject, OgitObjectType},
+    time,
 };
 
 #[derive(Debug, Clone)]
@@ -209,6 +211,35 @@ pub fn read_tree(tree_id: &str) -> Result<(), std::io::Error> {
         file.write_all(&object.data)?;
     }
     Ok(())
+}
+
+pub fn commit_tree(tree_id: &str, parent: &[String]) -> Result<OgitObject, std::io::Error> {
+    // commit message is usually taken from STDIN or with "-m" flag, for now mock with static message
+    let message = "This is a commit message\nWith multiple lines\n";
+    let tree = filesystem::get_object(tree_id, Some(OgitObjectType::Tree))?;
+    let mut commit_message = String::new();
+    commit_message.push_str(&format!("tree {tree}\n"));
+    for p in parent {
+        // first we need to check that each parent is a valid commit
+        commit_message.push_str(&format!("parent {p}\n"));
+    }
+    let time = time::get_current_local();
+    commit_message.push_str(&format!(
+        "author {author} {epoch_duration} {utc_offset}\n",
+        author = config::AUTHOR,
+        epoch_duration = time.timestamp(),
+        utc_offset = time.offset(),
+    ));
+    // TODO: use the committer from the config
+    commit_message.push_str(&format!(
+        "committer {committer} {epoch_duration} {utc_offset}\n\n",
+        committer = config::AUTHOR,
+        epoch_duration = time.timestamp(),
+        utc_offset = time.offset(),
+    ));
+    commit_message.push_str(message);
+    let object = filesystem::hash_object(commit_message.as_bytes(), Some(OgitObjectType::Commit))?;
+    Ok(object)
 }
 
 #[cfg(test)]
