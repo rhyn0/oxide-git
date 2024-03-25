@@ -1,9 +1,10 @@
+use chrono::{DateTime, Local};
 use itertools::Itertools;
 use regex::Regex;
 use std::{
     fmt::{Display, Write as _},
     fs,
-    io::Write,
+    io::{Read, Write},
     iter,
     path::{Path, PathBuf},
     str::FromStr,
@@ -213,9 +214,39 @@ pub fn read_tree(tree_id: &str) -> Result<(), std::io::Error> {
     Ok(())
 }
 
-pub fn commit_tree(tree_id: &str, parent: &[String]) -> Result<OgitObject, std::io::Error> {
+fn format_author_commit_line(author: &str, time: &DateTime<Local>) -> String {
+    format!(
+        "author {author} {epoch_duration} {utc_offset}\n",
+        epoch_duration = time.timestamp(),
+        utc_offset = time.offset(),
+    )
+}
+fn format_committer_commit_line(committer: &str, time: &DateTime<Local>) -> String {
+    format!(
+        "committer {committer} {epoch_duration} {utc_offset}\n",
+        epoch_duration = time.timestamp(),
+        utc_offset = time.offset(),
+    )
+}
+
+fn read_stdin_for_message() -> Result<String, std::io::Error> {
+    let mut message = String::new();
+    let stdin = std::io::stdin();
+    stdin.lock().read_to_string(&mut message)?;
+    Ok(message)
+}
+
+pub fn commit_tree(
+    tree_id: &str,
+    parent: &[String],
+    message: Option<String>,
+) -> Result<OgitObject, std::io::Error> {
     // commit message is usually taken from STDIN or with "-m" flag, for now mock with static message
-    let message = "This is a commit message\nWith multiple lines\n";
+    let message = match message {
+        Some(msg) => msg,
+        None => read_stdin_for_message()?,
+    };
+
     let tree = filesystem::get_object(tree_id, Some(OgitObjectType::Tree))?;
     let mut commit_message = String::new();
     commit_message.push_str(&format!("tree {tree}\n"));
@@ -224,20 +255,12 @@ pub fn commit_tree(tree_id: &str, parent: &[String]) -> Result<OgitObject, std::
         commit_message.push_str(&format!("parent {p}\n"));
     }
     let time = time::get_current_local();
-    commit_message.push_str(&format!(
-        "author {author} {epoch_duration} {utc_offset}\n",
-        author = config::AUTHOR,
-        epoch_duration = time.timestamp(),
-        utc_offset = time.offset(),
-    ));
+    commit_message.push_str(&format_author_commit_line(config::AUTHOR, &time));
     // TODO: use the committer from the config
-    commit_message.push_str(&format!(
-        "committer {committer} {epoch_duration} {utc_offset}\n\n",
-        committer = config::AUTHOR,
-        epoch_duration = time.timestamp(),
-        utc_offset = time.offset(),
-    ));
-    commit_message.push_str(message);
+    commit_message.push_str(&format_committer_commit_line(config::AUTHOR, &time));
+    commit_message.push('\n');
+    commit_message.push_str(message.trim_end());
+    commit_message.push('\n');
     let object = filesystem::hash_object(commit_message.as_bytes(), Some(OgitObjectType::Commit))?;
     Ok(object)
 }

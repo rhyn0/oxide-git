@@ -17,8 +17,12 @@ fn main() {
         Commands::CatObject { object_id } => functions::cat_object_cmd(&object_id),
         Commands::WriteTree { directory } => functions::write_tree_cmd(directory.as_deref()),
         Commands::ReadTree { tree_id } => functions::read_tree_cmd(&tree_id),
-        Commands::CommitTree { tree_id, parent } => {
-            functions::commit_tree_cmd(&tree_id, parent.as_deref());
+        Commands::CommitTree {
+            tree_id,
+            parent,
+            message,
+        } => {
+            functions::commit_tree_cmd(&tree_id, parent.as_deref(), message);
         }
     };
 }

@@ -34,5 +34,7 @@ pub enum Commands {
         // there can be multiple parents, so this is Vec
         #[arg(short, help = "The parent commit object")]
         parent: Option<Vec<String>>,
+        #[arg(short = 'm', help = "The commit message")]
+        message: Option<String>,
     },
 }
