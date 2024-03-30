@@ -78,3 +78,4 @@ rust-project.json
 # test output from oxide-git
 .ogit/
 .ogitignore
+test/

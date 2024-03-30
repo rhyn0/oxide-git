@@ -37,4 +37,13 @@ pub enum Commands {
         #[arg(short = 'm', help = "The commit message")]
         message: Option<String>,
     },
+    #[command(
+        name = "commit",
+        about = "Creates a new commit as a high-level operation including HEAD and reflog side effects."
+    )]
+    Commit {
+        /// currently implied that everything is in the index, so assume a '-a' flag is always present
+        #[arg(short = 'm', long = "message", help = "The commit message")]
+        message: Option<String>,
+    },
 }

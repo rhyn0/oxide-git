@@ -22,12 +22,34 @@ pub fn ogit_init() -> std::io::Result<()> {
     new_ogit_dir.push(PathBuf::from(OGIT_DIR));
     let mut ogit_obj_database_dir = new_ogit_dir.clone();
     ogit_obj_database_dir.push("objects");
+    let mut ogit_head_file = new_ogit_dir.clone();
+    ogit_head_file.push("HEAD");
 
     // raise error around unable to create directory.
     create_dir(new_ogit_dir)?;
     create_dir(ogit_obj_database_dir)?;
+    // write it as empty on INIT because we don't understand BRANCHES yet
+    // no commits created yet either
+    write(ogit_head_file, "")?;
 
     Ok(())
+}
+
+pub fn update_head_file(object: &OgitObject) -> std::io::Result<()> {
+    let mut head_file = current_dir()?;
+    head_file.push(PathBuf::from(OGIT_DIR.to_string()));
+    head_file.push(PathBuf::from("HEAD"));
+    // TODO: this will need to be changed when we introduce TAGS and branches
+    write(head_file, format!("{}\n", object.hex_string()))?;
+    Ok(())
+}
+
+pub fn read_head_file() -> std::io::Result<String> {
+    let mut head_file = current_dir()?;
+    head_file.push(PathBuf::from(OGIT_DIR.to_string()));
+    head_file.push(PathBuf::from("HEAD"));
+    let head_content = read_to_string(head_file)?;
+    Ok(head_content)
 }
 
 pub fn hash_object(

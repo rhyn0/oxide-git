@@ -65,3 +65,11 @@ pub fn commit_tree_cmd(tree_id: &str, parents: Option<&[String]>, message: Optio
         Err(e) => eprintln!("Error: {e}. Aborting commit-tree."),
     }
 }
+
+pub fn commit_cmd(message: Option<String>) {
+    let commit = porcelain::commit(message);
+    match commit {
+        Ok(c) => println!("{c}"),
+        Err(e) => eprintln!("Error: {e}. Aborting commit."),
+    }
+}
