@@ -252,7 +252,9 @@ pub fn commit_tree(
     commit_message.push_str(&format!("tree {tree}\n"));
     for p in parent {
         // first we need to check that each parent is a valid commit
-        commit_message.push_str(&format!("parent {p}\n"));
+        let parent_commit = filesystem::get_object(p, Some(OgitObjectType::Commit))?;
+        // also need to do this because *EVENTUALLy* the given id might be a min identifier, not the full id
+        commit_message.push_str(&format!("parent {}\n", parent_commit.hex_string()));
     }
     let time = time::get_current_local();
     commit_message.push_str(&format_author_commit_line(config::AUTHOR, &time));
