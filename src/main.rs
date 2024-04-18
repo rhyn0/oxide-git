@@ -2,6 +2,7 @@ mod cli;
 mod data;
 
 use cli::prelude::*;
+use data::porcelain;
 
 fn main() {
     let cli = Cli::parse();
@@ -26,5 +27,6 @@ fn main() {
         }
         Commands::Commit { message } => functions::commit_cmd(message),
         Commands::Log { commit } => functions::log_cmd(commit),
+        Commands::Checkout { commit } => porcelain::checkout(&commit),
     };
 }

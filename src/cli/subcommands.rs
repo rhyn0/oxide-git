@@ -51,4 +51,9 @@ pub enum Commands {
         #[arg(help = "The commit object")]
         commit: Option<String>,
     },
+    #[command(name = "checkout", about = "Checkout commit (for now) and move HEAD")]
+    Checkout {
+        #[arg(help = "The commit to checkout")]
+        commit: String,
+    },
 }
