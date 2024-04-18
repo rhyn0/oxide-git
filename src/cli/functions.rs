@@ -107,3 +107,11 @@ pub fn log_cmd(commit: Option<String>) {
         };
     }
 }
+
+pub fn tag_cmd(name: &str, oid: Option<String>) {
+    let head = filesystem::read_head_file().ok();
+    // yah this one needs work
+    // TODO: fix this weird error work around
+    let object_id = oid.unwrap_or_else(|| head.unwrap());
+    base::create_tag(name, &object_id);
+}

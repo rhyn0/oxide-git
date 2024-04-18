@@ -267,6 +267,10 @@ pub fn commit_tree(
     Ok(object)
 }
 
+pub fn create_tag(tag_name: &str, object_id: &str) {
+    eprintln!("Tag {tag_name} for object {object_id} created");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

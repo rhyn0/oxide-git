@@ -56,4 +56,11 @@ pub enum Commands {
         #[arg(help = "The commit to checkout")]
         commit: String,
     },
+    #[command(name = "tag", about = "Add a name to a specific commit")]
+    Tag {
+        #[arg(help = "Name of the tag")]
+        tag_name: String,
+        #[arg(help = "Object Id to be tagged")]
+        oid: Option<String>,
+    },
 }
