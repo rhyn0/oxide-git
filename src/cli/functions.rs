@@ -75,12 +75,16 @@ pub fn commit_cmd(message: Option<String>) {
     }
 }
 
-pub fn log_cmd() {
-    let mut curr_head_id = match filesystem::read_head_file() {
-        Ok(h) => h,
-        Err(e) => {
-            eprintln!("Error reading HEAD file: {e}");
-            return;
+pub fn log_cmd(commit: Option<String>) {
+    let mut curr_head_id = if let Some(commit) = commit {
+        commit
+    } else {
+        match filesystem::read_head_file() {
+            Ok(h) => h,
+            Err(e) => {
+                eprintln!("Error reading HEAD file: {e}");
+                return;
+            }
         }
     };
     loop {
