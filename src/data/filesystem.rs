@@ -49,7 +49,7 @@ pub fn read_head_file() -> std::io::Result<String> {
     head_file.push(PathBuf::from(OGIT_DIR.to_string()));
     head_file.push(PathBuf::from("HEAD"));
     let head_content = read_to_string(head_file)?;
-    Ok(head_content)
+    Ok(head_content.trim().to_owned())
 }
 
 pub fn hash_object(
@@ -148,7 +148,10 @@ pub fn read_file(filepath: &Path) -> std::io::Result<Vec<u8>> {
             Ok(output)
         }
         Err(e) => {
-            eprintln!("Error reading object file: {e}");
+            eprintln!(
+                "Error reading object file - {path}: {e}",
+                path = filepath.display()
+            );
             Err(e)
         }
     }
