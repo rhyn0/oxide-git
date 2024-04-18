@@ -27,3 +27,8 @@ To not interfere with actual `git` (especially inside this repo) we will replace
 This repository uses [pre-commit](https://pre-commit.com/) to run format, lint and check for CI prior to commits and merges.
 
 That job will run `clippy` linting and `rustfmt` for formatting.
+
+### Helpful Resources
+
+- [Object Storage](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects#-Object-Storage)
+- [The Docs](https://git-scm.com/docs)
