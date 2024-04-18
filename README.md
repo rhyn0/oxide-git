@@ -32,3 +32,4 @@ That job will run `clippy` linting and `rustfmt` for formatting.
 
 - [Object Storage](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects#-Object-Storage)
 - [The Docs](https://git-scm.com/docs)
+- [Git Repository](https://github.com/git/git)
