@@ -25,5 +25,6 @@ fn main() {
             functions::commit_tree_cmd(&tree_id, parent.as_deref(), message);
         }
         Commands::Commit { message } => functions::commit_cmd(message),
+        Commands::Log {} => functions::log_cmd(),
     };
 }

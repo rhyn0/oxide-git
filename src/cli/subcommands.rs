@@ -46,4 +46,10 @@ pub enum Commands {
         #[arg(short = 'm', long = "message", help = "The commit message")]
         message: Option<String>,
     },
+    #[command(name = "log", about = "Show commit logs.")]
+    Log {
+        // TODO: implement log options
+        // #[arg(short, long, help = "The commit object")]
+        // commit: Option<String>,
+    },
 }

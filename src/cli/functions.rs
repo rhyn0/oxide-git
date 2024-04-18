@@ -4,6 +4,7 @@ use crate::data::prelude::*;
 
 use self::{
     base::write_tree,
+    commits::OgitCommit,
     filesystem::{get_object, hash_object, ogit_init},
 };
 
@@ -71,5 +72,34 @@ pub fn commit_cmd(message: Option<String>) {
     match commit {
         Ok(c) => println!("{c}"),
         Err(e) => eprintln!("Error: {e}. Aborting commit."),
+    }
+}
+
+pub fn log_cmd() {
+    let mut curr_head_id = match filesystem::read_head_file() {
+        Ok(h) => h,
+        Err(e) => {
+            eprintln!("Error reading HEAD file: {e}");
+            return;
+        }
+    };
+    loop {
+        let commit = match OgitCommit::get(&curr_head_id) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error reading commit: {e}");
+                return;
+            }
+        };
+        println!("commit {curr_head_id}");
+        // could be something bad here about using println. such as formatting and other such should be handled by the OgitCommit
+        println!("{commit}");
+        // TODO: this index can be controlled by options passed on the command line
+        // Check out --first-parent
+        // https://git-scm.com/docs/git-log#Documentation/git-log.txt---first-parent
+        curr_head_id = match commit.parents.get(0) {
+            Some(p) => p.clone(),
+            None => break,
+        };
     }
 }
