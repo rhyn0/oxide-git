@@ -268,7 +268,20 @@ pub fn commit_tree(
 }
 
 pub fn create_tag(tag_name: &str, object_id: &str) {
-    eprintln!("Tag {tag_name} for object {object_id} created");
+    let ref_path = "refs/tags/{tag_name}";
+    let object = match filesystem::get_object(object_id, None) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("Unable to load object {object_id} to be tagged: {e}");
+            return;
+        }
+    };
+    match filesystem::update_ref_file(ref_path, &object) {
+        Ok(()) => (),
+        Err(e) => {
+            eprintln!("Unable to create/update tag {tag_name}: {e}");
+        }
+    }
 }
 
 #[cfg(test)]
