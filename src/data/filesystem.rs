@@ -24,10 +24,13 @@ pub fn ogit_init() -> std::io::Result<()> {
     ogit_obj_database_dir.push("objects");
     let mut ogit_head_file = new_ogit_dir.clone();
     ogit_head_file.push("HEAD");
+    let mut ogit_refs_dir = new_ogit_dir.clone();
+    ogit_refs_dir.push("refs");
 
     // raise error around unable to create directory.
     create_dir(new_ogit_dir)?;
     create_dir(ogit_obj_database_dir)?;
+    create_dir(ogit_refs_dir)?;
     // write it as empty on INIT because we don't understand BRANCHES yet
     // no commits created yet either
     write(ogit_head_file, "")?;
@@ -35,20 +38,41 @@ pub fn ogit_init() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn update_head_file(object: &OgitObject) -> std::io::Result<()> {
-    let mut head_file = current_dir()?;
-    head_file.push(PathBuf::from(OGIT_DIR.to_string()));
-    head_file.push(PathBuf::from("HEAD"));
-    // TODO: this will need to be changed when we introduce TAGS and branches
-    write(head_file, format!("{}\n", object.hex_string()))?;
+/// Writes updated data to the given path of `ref_name`.
+///
+/// Example:
+///     Update HEAD `update_ref_file("HEAD", object);`
+///     Update tag 'MY-TAG' `update_ref_file("refs/tags/MY-TAG", object);`
+pub fn update_ref_file(ref_name: &str, object: &OgitObject) -> std::io::Result<()> {
+    // TODO: we should be able to restrict the input to a specific custom Trait here.
+    let mut ref_file = current_dir()?;
+    ref_file.push(PathBuf::from(OGIT_DIR.to_string()));
+    ref_file.push(PathBuf::from(ref_name));
+    // make sure our directory exists
+    if !ref_file.exists() {
+        // if dir already exists, we dont handle Err differently from Ok
+        let _ = create_dir(ref_file.parent().unwrap());
+    };
+    write(ref_file, format!("{}\n", object.hex_string()))?;
     Ok(())
 }
 
-pub fn read_head_file() -> std::io::Result<String> {
-    let mut head_file = current_dir()?;
-    head_file.push(PathBuf::from(OGIT_DIR.to_string()));
-    head_file.push(PathBuf::from("HEAD"));
-    let head_content = read_to_string(head_file)?;
+/// Reads reference data from the given path of `ref_name`.
+///
+/// Example:
+///     Get HEAD `read_ref_file("HEAD");`
+///     Get tag 'MY-TAG' `read_ref_file("refs/tags/MY-TAG");`
+pub fn read_ref_file(ref_name: &str) -> std::io::Result<String> {
+    let mut ref_file = current_dir()?;
+    ref_file.push(PathBuf::from(OGIT_DIR.to_string()));
+    ref_file.push(PathBuf::from(ref_name));
+    if !ref_file.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Reference {ref_name} was not found.",
+        ));
+    }
+    let head_content = read_to_string(ref_file)?;
     Ok(head_content.trim().to_owned())
 }
 

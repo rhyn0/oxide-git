@@ -10,7 +10,7 @@ pub fn commit(message: Option<String>) -> Result<OgitObject, std::io::Error> {
     // for now let commit-tree handle the stdin message
     let tree = base::write_tree(None)?;
     let tree_id = tree.hex_string();
-    let head_parent = filesystem::read_head_file()?.trim().to_owned();
+    let head_parent = filesystem::read_ref_file("HEAD")?.trim().to_owned();
 
     // porcelain commit is linear, so only one parent
     let parents: Vec<String> = if head_parent.is_empty() {
@@ -19,7 +19,7 @@ pub fn commit(message: Option<String>) -> Result<OgitObject, std::io::Error> {
         vec![head_parent]
     };
     let commit = base::commit_tree(&tree_id, &parents, message)?;
-    filesystem::update_head_file(&commit)?;
+    filesystem::update_ref_file("HEAD", &commit)?;
     Ok(commit)
 }
 
@@ -50,7 +50,7 @@ pub fn checkout(commit: &str) {
             return;
         }
     };
-    match filesystem::update_head_file(&tree_object) {
+    match filesystem::update_ref_file("HEAD", &tree_object) {
         Ok(()) => (),
         Err(e) => eprintln!("Error while updating HEAD file: {e}"),
     }
